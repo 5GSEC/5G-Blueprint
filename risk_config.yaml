@@ -1,0 +1,48 @@
+# risks:
+  - risk_id: "T-O-RAN-01 (O-CU)"
+    workload: 
+    - "CU"
+    risk_description: "Unauthenticated/unauthorized access of the O_RAN component leads to compromised performance and/or function/service, lateral attack towards other O-RAN system component(s) from inside, and loss/stolen/tampering of sensitive data"
+    severity: "High"
+    checkpoints:
+      - "Is TLS Enabled?"
+      - "Network Policies for Ingress and Egress connections?"
+      - "Least Permessive Policies to protect sensitive assets"
+
+  - risk_id: "T-O-RAN-01 (O-DU)"
+    workload: 
+    - "DU"
+    risk_description: "Unauthenticated/unauthorized access of the O_RAN component leads to compromised performance and/or function/service, lateral attack towards other O-RAN system component(s) from inside, and loss/stolen/tampering of sensitive data"
+    severity: "High"
+    checkpoints:
+      - "Is TLS Enabled?"
+      - "Network Policies for Ingress and Egress connections?"
+      - "Least Permessive Policies to protect sensitive assets?"
+  
+  - risk_id: "T-O-RAN-01(NEAR RT RIC)"
+    workload: 
+     - "xApps"
+     - "rApps"
+    risk_description: "Unauthenticated/unauthorized access of the O_RAN component leads to compromised performance and/or function/service, lateral attack towards other O-RAN system component(s) from inside, and loss/stolen/tampering of sensitive data"
+    severity: "High"
+    checkpoints:
+      - "Is TLS Enabled?"
+      - "Network Policies for Ingress and Egress connections?"
+      - "Least Permessive Policies to protect sensitive assets?" 
+  
+  - risk_id: "3GPP-5GCore (Section 4.2.5)"
+    workload: 
+     - "UDR"
+    risk_description: "Only UDM, PCF, and NEF can connect to Ingress on UDR"
+    severity: "High"
+    checkpoints:
+      - "Network Policies for Ingress and Egress connections?"
+
+  - risk_id: "3GPP 33.501"
+    workload: 
+     - "NRF"
+    risk_description: "No Egress connections should be allowed from NRF at runtime."
+    severity: "High"
+    checkpoints:
+      - "Network Policies for Egress connections?"
+  
