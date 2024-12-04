@@ -35,16 +35,23 @@ type Risk struct {
 
 // Define the structure for the workload
 type Workload struct {
-	WorkloadName            string   `yaml:"workload_name"`
-	Labels                  []string `yaml:"labels"` // Labels are key-value pairs
-	SensitiveAssetLocations []string `yaml:"sensitive_asset_locations"`
-	Egress                  []string `yaml:"egress,omitempty"`
-	Ingress                 []string `yaml:"ingress,omitempty"`
+	WorkloadName            string      `yaml:"workload_name"`
+	Labels                  []string    `yaml:"labels"` // Labels are key-value pairs
+	SensitiveAssetLocations []string    `yaml:"sensitive_asset_locations"`
+	Egress                  []string    `yaml:"egress,omitempty"`
+	Ingress                 []string    `yaml:"ingress,omitempty"`
+	Checkpoint              Checkpoints `yaml:"checkpoints"`
 }
 
 // Define the top-level structure
 type workloadConfig struct {
 	Workloads []Workload `yaml:"workloads"`
+}
+
+type Checkpoints struct {
+	TLSCheck    bool
+	EgressCheck bool
+	PolicyCheck bool
 }
 
 func main() {
@@ -87,17 +94,21 @@ func main() {
 	}
 
 	for name, info := range workloadMap {
-		fmt.Println(name, "\n")
-		fmt.Println(info)
-	}
-
-	for name, info := range workloadMap {
 		exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
 		if err != nil {
 			panic(err.Error())
 		}
 		if exists {
-			fmt.Println("Workload: ", name, "Indeed exists")
+			network, err := verifyNetworkPolicy(edgeclientset, coreclientset, workloadMap)
+			if err != nil {
+				panic(err.Error())
+			}
+
+			if network {
+				info.Checkpoint.EgressCheck = true
+				fmt.Println("Network policy does indeed exist for: ", name)
+			}
+
 		}
 	}
 
@@ -223,7 +234,7 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 	return true, nil
 }
 
-func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload map[string]WorkloadMap) (bool, error) {
+func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload map[string]Workload) (bool, error) {
 	edgeNetworkPolicies, err := edgeClientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return false, fmt.Errorf("failed to list network policies: %v", err)
@@ -233,7 +244,7 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 
 	for _, np := range edgeNetworkPolicies.Items {
 		for work, details := range workload {
-			for _, det := range details.WorkloadLabels {
+			for _, det := range details.Labels {
 				if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
 					fmt.Println("Continuing cuz nothing found")
 					continue
@@ -243,10 +254,10 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 						for _, egre := range details.Egress {
 							component, exists := workload[egre]
 							if !exists {
-								fmt.Println("Component not found:", details.Workload)
+								fmt.Println("Component not found:", details.WorkloadName)
 								continue
 							}
-							for _, labels := range component.WorkloadLabels {
+							for _, labels := range component.Labels {
 								if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
 									fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
 										np.Name, work, labels)
@@ -266,7 +277,7 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 
 	for _, np := range coreNetworkPolicies.Items {
 		for work, details := range workload {
-			for _, det := range details.WorkloadLabels {
+			for _, det := range details.Labels {
 				if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
 					fmt.Println("Continuing cuz nothing found")
 					continue
@@ -276,10 +287,10 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 						for _, egre := range details.Egress {
 							component, exists := workload[egre]
 							if !exists {
-								fmt.Println("Component not found:", details.Workload)
+								fmt.Println("Component not found:", details.WorkloadName)
 								continue
 							}
-							for _, labels := range component.WorkloadLabels {
+							for _, labels := range component.Labels {
 								if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
 									fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
 										np.Name, work, labels)
