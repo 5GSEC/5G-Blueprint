@@ -45,25 +45,22 @@ type MergedData struct {
 	Checkpoints     []string `yaml:"checkpoints"`
 }
 
+type WorkloadConfig struct {
+	WorkloadLabels          []string `yaml:"Workload Labels"`
+	SensitiveAssetLocations []string `yaml:"Sensitive Asset Locations"`
+	Egress                  []string `yaml:"Egress,omitempty"`
+	Ingress                 []string `yaml:"Ingress,omitempty"`
+}
+
+type WorkloadData struct {
+	Workload                string   `yaml:"Workload"`
+	WorkloadLabels          []string `yaml:"Workload Labels"`
+	SensitiveAssetLocations []string `yaml:"Sensitive Asset Locations"`
+	Egress                  []string `yaml:"Egress,omitempty"`
+	Ingress                 []string `yaml:"Ingress,omitempty"`
+}
+
 func main() {
-	// Read YAML file
-	yamlFile, err := ioutil.ReadFile("oai-workload-map.yaml")
-	if err != nil {
-		log.Fatalf("Error reading YAML file: %v", err)
-	}
-
-	var components []WorkloadMap
-
-	err = yaml.Unmarshal(yamlFile, &components)
-	if err != nil {
-		log.Fatalf("Error unmarshaling YAML: %v", err)
-	}
-
-	componentMap := make(map[string]WorkloadMap)
-
-	for _, comp := range components {
-		componentMap[comp.Workload] = comp
-	}
 
 	edgeconfig, err := clientcmd.BuildConfigFromFlags("", "/home/ubuntu/.kube/edge-kubeconfig")
 	if err != nil {
@@ -85,17 +82,28 @@ func main() {
 		panic(err.Error())
 	}
 
-	// mergedMap := mergeMaps(mapWorkloadToRisk(), componentMap)
-	workMaps := mapWorkloadToRisk()
-
-	mergedMap := mergeMaps(componentMap, workMaps)
-	for workload, riskDetails := range mergedMap {
-		fmt.Println(workload)
-		fmt.Println("\n", riskDetails)
-
+	data, err := ioutil.ReadFile("oai-workload-map.yaml")
+	if err != nil {
+		panic(err)
 	}
 
-	data, err := ioutil.ReadFile("risk_config.yaml")
+	var entries []WorkloadData
+	err = yaml.Unmarshal(data, &entries)
+	if err != nil {
+		panic(err)
+	}
+
+	workloadMap := make(map[string]WorkloadConfig)
+	for _, entry := range entries {
+		workloadMap[entry.Workload] = WorkloadConfig{
+			WorkloadLabels:          entry.WorkloadLabels,
+			SensitiveAssetLocations: entry.SensitiveAssetLocations,
+			Egress:                  entry.Egress,
+			Ingress:                 entry.Ingress,
+		}
+	}
+
+	riskList, err := ioutil.ReadFile("risk_config.yaml")
 	if err != nil {
 		log.Fatalf("error reading YAML file: %v", err)
 	}
@@ -167,7 +175,7 @@ func main() {
 				{{range .}}
 				<div class="accordion-section">
 					<div class="accordion-header" onclick="toggleAccordion(this)">
-						{{.Workload}} - Risk ID: {{.RiskID}}
+						{{.Workload}} 
 					</div>
 					<div class="accordion-content">
 						<h3>Risk Details</h3>
