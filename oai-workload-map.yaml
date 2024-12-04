@@ -1,64 +1,59 @@
-- Workload: CU-UP
-  Workload Labels:
-    - app.kubernetes.io/name=oai-gnb-cu-up
-  Sensitive Asset Locations:
-    - /opt/oai-gnb/etc/gnb.conf
-    - /opt/oai-gnb/bin/nr-cuup
-    - /run/secrets/kubernetes.io/serviceaccount/
-  Egress:
-    - DU
-
-- Workload: DU
-  Workload Labels:
-    - app.kubernetes.io/name=oai-gnb-du
-  Sensitive Asset Locations:
-    - /run/secrets/kubernetes.io/serviceaccount/
-    - /opt/oai-gnb/etc/gnb.conf
-    - /opt/oai-gnb/bin/nr-softmodem
-
-- Workload: AUSF
-  Workload Labels:
-    - workload.nephio.org/oai=ausf
-  Sensitive Asset Locations:
-    - /run/secrets/kubernetes.io/serviceaccount/
-    - /openair-ausf/bin/oai_ausf
-    - /openair-ausf/etc/ausf.yaml
-  Egress:
-    - UDM
-
-- Workload: SMF
-  Workload Labels:
-    - workload.nephio.org/oai=smf
-  Sensitive Asset Locations:
-    - /run/secrets/kubernetes.io/serviceaccount/
-    - /openair-smf/bin/oai_smf
-    - /openair-smf/etc/smf.yaml 
-  Egress:
-    - UPF
-
-- Workload: UPF
-  Workload Labels:
-    - workload.nephio.org/oai=upf
-  Sensitive Asset Locations:
-    - /run/secrets/kubernetes.io/serviceaccount/
-    - /openair-upf/bin/oai_upf
-    - /openair-upf/etc/upf.yaml
-  Ingress:
-    - SMF  
-
-- Workload: UDR
-  Workload Labels:
-    - workload.nephio.org/oai=udr
-  Sensitive Asset Locations:
-    - /run/secrets/kubernetes.io/serviceaccount/
-    - /openair-udr/bin/oai_udr
-    - /openair-udr/etc/udr.yaml
-  Ingress:
-    - UDM
-
-- Workload: Control xApp
-  Workload Labels:
-    - workload.nephio.org/oai=xApp
-  Sensitive Asset Locations:
-    - /run/secrets/kubernetes.io/serviceaccount/
-    - /etc/test 
+workloads:
+  - workload_name: CU-UP
+    labels:
+      - app.kubernetes.io/name=oai-gnb-cu-up
+    sensitive_asset_locations:
+      - /opt/oai-gnb/etc/gnb.conf
+      - /opt/oai-gnb/bin/nr-cuup
+      - /run/secrets/kubernetes.io/serviceaccount/
+    egress:
+      - DU
+  - workload_name: DU
+    labels:
+      - app.kubernetes.io/name=oai-gnb-du
+    sensitive_asset_locations:
+      - /run/secrets/kubernetes.io/serviceaccount/
+      - /opt/oai-gnb/etc/gnb.conf
+      - /opt/oai-gnb/bin/nr-softmodem
+  - workload_name: AUSF
+    labels:
+      - workload.nephio.org/oai=ausf
+    sensitive_asset_locations:
+      - /run/secrets/kubernetes.io/serviceaccount/
+      - /openair-ausf/bin/oai_ausf
+      - /openair-ausf/etc/ausf.yaml
+    egress:
+      - UDM
+  - workload_name: SMF
+    labels:
+      - workload.nephio.org/oai=smf
+    sensitive_asset_locations:
+      - /run/secrets/kubernetes.io/serviceaccount/
+      - /openair-smf/bin/oai_smf
+      - /openair-smf/etc/smf.yaml
+    egress:
+      - UPF
+  - workload_name: UPF
+    labels:
+      - workload.nephio.org/oai=upf
+    sensitive_asset_locations:
+      - /run/secrets/kubernetes.io/serviceaccount/
+      - /openair-upf/bin/oai_upf
+      - /openair-upf/etc/upf.yaml
+    ingress:
+      - SMF
+  - workload_name: UDR
+    labels:
+      - workload.nephio.org/oai=udr
+    sensitive_asset_locations:
+      - /run/secrets/kubernetes.io/serviceaccount/
+      - /openair-udr/bin/oai_udr
+      - /openair-udr/etc/udr.yaml
+    ingress:
+      - UDM
+  - workload_name: Control xApp
+    labels:
+      - workload.nephio.org/oai=xApp
+    sensitive_asset_locations:
+      - /run/secrets/kubernetes.io/serviceaccount/
+      - /etc/test
