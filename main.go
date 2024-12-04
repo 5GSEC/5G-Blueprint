@@ -241,6 +241,7 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 	if err != nil {
 		return false, fmt.Errorf("failed to list network policies: %v", err)
 	}
+	var flag = false
 
 	fmt.Println("CHECKING NETWORK POLICIES")
 
@@ -249,6 +250,7 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 		// 	fmt.Println("Continuing cuz nothing found")
 		// 	continue
 		// }
+
 		for _, egress := range np.Spec.Egress {
 			for _, to := range egress.To {
 
@@ -256,6 +258,7 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 					if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
 						fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
 							np.Name, labels, labels)
+						flag = true
 					}
 				}
 			}
@@ -277,6 +280,7 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 					if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
 						fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
 							np.Name, labels, labels)
+						flag = true
 					}
 				}
 			}
@@ -284,14 +288,13 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 		}
 	}
 
-	return true, err
+	return flag, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
 	for key, value := range matchLabels {
 		label := fmt.Sprintf("%s=%s", key, value)
 		if strings.Contains(targetLabel, label) {
-			fmt.Println(targetLabel, " ", label)
 			return true
 		}
 	}
