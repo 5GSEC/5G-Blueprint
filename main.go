@@ -103,9 +103,11 @@ func main() {
 			if err != nil {
 				panic(err.Error())
 			}
+			fmt.Println(network)
 
 			if network {
 				info.Checkpoint.EgressCheck = true
+
 				fmt.Println("Network policy does indeed exist for: ", name)
 			}
 
