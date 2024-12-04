@@ -1,4 +1,4 @@
-- Component Name: CU-UP
+- Workload: CU-UP
   Workload Labels:
     - app.kubernetes.io/name=oai-gnb-cu-up
   Sensitive Asset Locations:
@@ -8,7 +8,7 @@
   Egress:
     - DU
 
-- Component Name: DU
+- Workload: DU
   Workload Labels:
     - app.kubernetes.io/name=oai-gnb-du
   Sensitive Asset Locations:
@@ -16,7 +16,7 @@
     - /opt/oai-gnb/etc/gnb.conf
     - /opt/oai-gnb/bin/nr-softmodem
 
-- Component Name: AUSF
+- Workload: AUSF
   Workload Labels:
     - workload.nephio.org/oai=ausf
   Sensitive Asset Locations:
@@ -26,7 +26,7 @@
   Egress:
     - UDM
 
-- Component Name: SMF
+- Workload: SMF
   Workload Labels:
     - workload.nephio.org/oai=smf
   Sensitive Asset Locations:
@@ -36,7 +36,7 @@
   Egress:
     - UPF
 
-- Component Name: UPF
+- Workload: UPF
   Workload Labels:
     - workload.nephio.org/oai=upf
   Sensitive Asset Locations:
@@ -46,7 +46,7 @@
   Ingress:
     - SMF  
 
-- Component Name: UDR
+- Workload: UDR
   Workload Labels:
     - workload.nephio.org/oai=udr
   Sensitive Asset Locations:
@@ -56,7 +56,7 @@
   Ingress:
     - UDM
 
-- Component Name: Control xApp
+- Workload: Control xApp
   Workload Labels:
     - workload.nephio.org/oai=xApp
   Sensitive Asset Locations:

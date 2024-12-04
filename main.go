@@ -35,16 +35,6 @@ type Risk struct {
 	Checkpoints     []string `yaml:"checkpoints"`
 }
 
-type MergedData struct {
-	WorkloadMap
-	ComponentName   string   `yaml:"component_name"`
-	RiskID          string   `yaml:"risk_id"`
-	Workload        []string `yaml:"workload"`
-	RiskDescription string   `yaml:"risk_description"`
-	Severity        string   `yaml:"severity"`
-	Checkpoints     []string `yaml:"checkpoints"`
-}
-
 type WorkloadConfig struct {
 	WorkloadLabels          []string `yaml:"Workload Labels"`
 	SensitiveAssetLocations []string `yaml:"Sensitive Asset Locations"`
@@ -103,44 +93,7 @@ func main() {
 		}
 	}
 
-	riskList, err := ioutil.ReadFile("risk_config.yaml")
-	if err != nil {
-		log.Fatalf("error reading YAML file: %v", err)
-	}
-
-	// Parse the YAML data into Go structs
-	// var merged []MergedData
-	var risks []Risk
-	var FinalRisks []WorkloadMap
-	err = yaml.Unmarshal(data, &risks)
-	if err != nil {
-		log.Fatalf("error unmarshalling YAML data: %v", err)
-	}
-
-	for _, details := range componentMap {
-
-		Exist, err := verifyWorkloads(edgeclientset, coreclientset, details)
-		if err != nil {
-			panic(err.Error())
-		}
-
-		if Exist {
-
-		}
-	}
-	_, err = verifyNetworkPolicy(edgeclientset, coreclientset, componentMap)
-	if err != nil {
-		fmt.Errorf("error checking pods in EDGE cluster: %v", err)
-	}
-
-	// finalMerged := mergeDuplicates(merged)
-
-	// // Convert the struct to JSON
-	// jsonData, err := json.MarshalIndent(finalMerged, "", "  ")
-	// if err != nil {
-	// 	fmt.Println("Error marshaling struct:", err)
-	// 	return
-	// }
+	// riskList, err := ioutil.ReadFile("risk_config.yaml"
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		tmpl := `
 		<!DOCTYPE html>
