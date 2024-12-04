@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -35,19 +33,18 @@ type Risk struct {
 	Checkpoints     []string `yaml:"checkpoints"`
 }
 
-type WorkloadConfig struct {
-	WorkloadLabels          []string `yaml:"Workload Labels"`
-	SensitiveAssetLocations []string `yaml:"Sensitive Asset Locations"`
-	Egress                  []string `yaml:"Egress,omitempty"`
-	Ingress                 []string `yaml:"Ingress,omitempty"`
+// Define the structure for the workload
+type Workload struct {
+	WorkloadName            string   `yaml:"workload_name"`
+	Labels                  []string `yaml:"labels"` // Labels are key-value pairs
+	SensitiveAssetLocations []string `yaml:"sensitive_asset_locations"`
+	Egress                  []string `yaml:"egress,omitempty"`
+	Ingress                 []string `yaml:"ingress,omitempty"`
 }
 
-type WorkloadData struct {
-	Workload                string   `yaml:"Workload"`
-	WorkloadLabels          []string `yaml:"Workload Labels"`
-	SensitiveAssetLocations []string `yaml:"Sensitive Asset Locations"`
-	Egress                  []string `yaml:"Egress,omitempty"`
-	Ingress                 []string `yaml:"Ingress,omitempty"`
+// Define the top-level structure
+type workloadConfig struct {
+	Workloads []Workload `yaml:"workloads"`
 }
 
 func main() {
@@ -72,174 +69,55 @@ func main() {
 		panic(err.Error())
 	}
 
-	data, err := ioutil.ReadFile("oai-workload-map.yaml")
+	oaiConfig, err := ioutil.ReadFile("oai-workload-map.yaml")
 	if err != nil {
 		panic(err)
 	}
 
-	var entries []WorkloadData
-	err = yaml.Unmarshal(data, &entries)
+	var entries workloadConfig
+	err = yaml.Unmarshal(oaiConfig, &entries)
 	if err != nil {
 		panic(err)
 	}
 
-	workloadMap := make(map[string]WorkloadConfig)
-	for _, entry := range entries {
-		workloadMap[entry.Workload] = WorkloadConfig{
-			WorkloadLabels:          entry.WorkloadLabels,
-			SensitiveAssetLocations: entry.SensitiveAssetLocations,
-			Egress:                  entry.Egress,
-			Ingress:                 entry.Ingress,
+	// Create a map with workload_name as the key
+	workloadMap := make(map[string]Workload)
+	for _, workload := range entries.Workloads {
+		workloadMap[workload.WorkloadName] = workload
+	}
+
+	for name, info := range workloadMap {
+		fmt.Println(name, "\n")
+		fmt.Println(info)
+	}
+
+	for name, info := range workloadMap {
+		exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
+		if err != nil {
+			panic(err.Error())
+		}
+		if exists {
+			fmt.Println("Workload: ", name, "Indeed exists")
 		}
 	}
 
-	// riskList, err := ioutil.ReadFile("risk_config.yaml"
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := `
-		<!DOCTYPE html>
-		<html>
-		<head>
-			<style>
-				.accordion {
-					max-width: 800px;
-					margin: 20px auto;
-				}
-				.accordion-header {
-					background: #f4f4f4;
-					padding: 15px;
-					cursor: pointer;
-					border: 1px solid #ddd;
-					border-radius: 4px;
-					margin-top: 5px;
-				}
-				.accordion-content {
-					display: none;
-					padding: 15px;
-					border: 1px solid #ddd;
-					border-top: none;
-				}
-				.severity-high { color: #dc3545; }
-				.severity-medium { color: #ffc107; }
-				.severity-low { color: #28a745; }
-			</style>
-		</head>
-		<body>
-			<div class="accordion">
-				{{range .}}
-				<div class="accordion-section">
-					<div class="accordion-header" onclick="toggleAccordion(this)">
-						{{.Workload}} 
-					</div>
-					<div class="accordion-content">
-						<h3>Risk Details</h3>
-						<p><strong>Description:</strong> {{.RiskDescription}}</p>
-						<p><strong>Severity:</strong> <span class="severity-{{.Severity}}">{{.Severity}}</span></p>
-						
-						{{if .WorkloadLabels}}
-						<h4>Workload Labels</h4>
-						<ul>
-							{{range .WorkloadLabels}}
-							<li>{{.}}</li>
-							{{end}}
-						</ul>
-						{{end}}
-		
-						{{if .SensitiveAssetLocations}}
-						<h4>Sensitive Asset Locations</h4>
-						<ul>
-							{{range .SensitiveAssetLocations}}
-							<li>{{.}}</li>
-							{{end}}
-						</ul>
-						{{end}}
-		
-						{{if .Egress}}
-						<h4>Egress Rules</h4>
-						<ul>
-							{{range .Egress}}
-							<li>{{.}}</li>
-							{{end}}
-						</ul>
-						{{end}}
-		
-						{{if .Ingress}}
-						<h4>Ingress Rules</h4>
-						<ul>
-							{{range .Ingress}}
-							<li>{{.}}</li>
-							{{end}}
-						</ul>
-						{{end}}
-		
-						{{if .Checkpoints}}
-						<h4>Checkpoints</h4>
-						<ul>
-							{{range .Checkpoints}}
-							<li>{{.}}</li>
-							{{end}}
-						</ul>
-						{{end}}
-					</div>
-				</div>
-				{{end}}
-			</div>
-		
-			<script>
-				function toggleAccordion(element) {
-					const content = element.nextElementSibling;
-					if (content.style.display === "block") {
-						content.style.display = "none";
-					} else {
-						content.style.display = "block";
-					}
-				}
-			</script>
-		</body>
-		</html>`
-		t, err := template.New("accordion").Parse(tmpl)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		for _, det := range mergedMap {
-			Exist, err := verifyWorkloads(edgeclientset, coreclientset, det)
-			if err != nil {
-				panic(err.Error())
-			}
-
-			if Exist {
-				FinalRisks = append(FinalRisks, det)
-			}
-
-		}
-
-		err = t.Execute(w, FinalRisks)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-	})
-
-	http.ListenAndServe(":8080", nil)
-
 }
 
-func mergeDuplicates(slice []MergedData) []MergedData {
-	result := []MergedData{}
-	seen := make(map[string]bool)
+// func mergeDuplicates(slice []MergedData) []MergedData {
+// 	result := []MergedData{}
+// 	seen := make(map[string]bool)
 
-	for _, risk := range slice {
-		for _, labels := range risk.WorkloadLabels {
-			if _, exists := seen[labels]; !exists {
-				result = append(result, risk)
-				seen[labels] = true
-			}
-		}
-	}
+// 	for _, risk := range slice {
+// 		for _, labels := range risk.WorkloadLabels {
+// 			if _, exists := seen[labels]; !exists {
+// 				result = append(result, risk)
+// 				seen[labels] = true
+// 			}
+// 		}
+// 	}
 
-	return result
-}
+// 	return result
+// }
 
 func mergeMaps(map1 map[string]WorkloadMap, map2 map[string][]map[string]interface{}) map[string]WorkloadMap {
 	mergedMap := make(map[string]WorkloadMap)
@@ -312,11 +190,11 @@ func mapWorkloadToRisk() map[string][]map[string]interface{} {
 	return workloadToRiskMapping
 }
 
-func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload WorkloadMap) (bool, error) {
+func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload Workload) (bool, error) {
 
 	// Create label selector from workload labels
 	var labelSelector string
-	for _, v := range workload.WorkloadLabels {
+	for _, v := range workload.Labels {
 		if labelSelector != "" {
 			labelSelector += ","
 		}
