@@ -312,6 +312,7 @@ func matchesLabelSelector(matchLabels map[string]string, targetLabel string) boo
 	for key, value := range matchLabels {
 		label := fmt.Sprintf("%s=%s", key, value)
 		if strings.Contains(targetLabel, label) {
+			fmt.Println(targetLabel, " ", label)
 			return true
 		}
 	}
