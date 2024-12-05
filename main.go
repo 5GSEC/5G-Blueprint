@@ -101,6 +101,9 @@ func main() {
 		if exists {
 
 			edgeSens, edgekspCheck, err := checkSensitiveDirs(edgeconfig, info.SensitiveAssetLocations)
+			if err != nil {
+				panic(err.Error())
+			}
 			// coreSens, kspCheck, err := checkSensitiveDirs(coreconfig, info.SensitiveAssetLocations)
 			fmt.Println("Sensitive Assets detected for: ", name, "bool: ", edgekspCheck, "Assets: ", edgeSens)
 			// edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
