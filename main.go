@@ -99,7 +99,7 @@ func main() {
 	}
 	fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork)
 	coreNetwork, err := verifyNetworkPolicy(coreclientset, workloadMap)
-	fmt.Println("EDGE POLICY EXISTS OR NOT: ", coreNetwork)
+	fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork)
 
 	// for name, info := range workloadMap {
 	// 	exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
