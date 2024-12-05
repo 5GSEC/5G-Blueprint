@@ -99,12 +99,12 @@ func main() {
 			panic(err.Error())
 		}
 		if exists {
-			edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, workloadMap)
+			edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
 			if err != nil {
 				panic(err.Error())
 			}
 			fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork, "WORKLOAD: ", edgeWorkloads)
-			coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, workloadMap)
+			coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
 			fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork, "WORKLOAD: ", coreWorkloads)
 			// if network {
 			// 	info.Checkpoint.EgressCheck = true
@@ -237,13 +237,12 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 	return true, nil
 }
 
-func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Workload) (bool, string, error) {
-	var w Workload
+func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload map[string]Workload) (bool, string, error) {
 	networkPolicies, err := clientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return false, "", fmt.Errorf("failed to list network policies: %v", err)
 	}
-	var flag = false
+	// var flag = false
 
 	fmt.Println("CHECKING NETWORK POLICIES")
 
@@ -275,7 +274,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Wo
 								fmt.Printf("Policy %s for workload %s in cluster allows egress to pods with label %s\n",
 									np.Name, work, labels)
 								w.WorkloadName = work
-								flag = true
+								return true, w.WorkloadName, nil
 							}
 						}
 					}
@@ -286,7 +285,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Wo
 		}
 	}
 
-	return flag, w.WorkloadName, err
+	return false, w.WorkloadName, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
