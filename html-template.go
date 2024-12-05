@@ -104,7 +104,7 @@ var tmplStr = `
                             {{with .Checkpoints.CHK_POLP_EGRESS}}
                                 <div class="checkpoint">
                                     <strong>Egress Policy Check:</strong>
-                                    {{{ with index . 0 }}
+                                    {{ with index . 0 }}
                                         <div>
                                             <span class="status {{if  .Status }}status-pass{{else}}status-fail{{end}}">
                                                 {{if  .Status }}✓{{else}}✗{{end}}
