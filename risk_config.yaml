@@ -7,14 +7,14 @@
     severity: "High"
     checkpoints:
       CHK_TLS:
-        - description: "Is TLS Enabled?"
-        - status: false
+         description: "Is TLS Enabled?"
+         status: false
       CHK_POLP_INGRESS:
-        - description: "Network Policies for Ingress connections?"
-        - status: false
+          description: "Network Policies for Ingress connections?"
+          status: false
       CHK_SENSITIVE_ASSETS:
-        - description: "Are Least Permissive Policies enforced for Sensitive Assets?"  
-        - status: false  
+          description: "Are Least Permissive Policies enforced for Sensitive Assets?"  
+          status: false  
   
   - risk_id: "T-O-RAN-01(NEAR RT RIC)"
     workload: 
