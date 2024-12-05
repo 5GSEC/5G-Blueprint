@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
+	v1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -238,88 +239,57 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 }
 
 func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload map[string]Workload) (bool, error) {
-	edgeNetworkPolicies, err := edgeClientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return false, fmt.Errorf("failed to list network policies: %v", err)
+	checkPolicies := func(networkPolicies *v1.NetworkPolicyList, clusterName string) (bool, error) {
+		for _, np := range networkPolicies.Items {
+			for work, details := range workload {
+				for _, det := range details.Labels {
+					if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
+						fmt.Printf("Continuing in %s cluster because nothing matched PodSelector\n", clusterName)
+						continue
+					}
+
+					for _, egress := range np.Spec.Egress {
+						for _, to := range egress.To {
+							for _, egre := range details.Egress {
+								component, exists := workload[egre]
+								if !exists {
+									fmt.Printf("To Pod Egress not found in %s cluster for workload: %s\n", clusterName, details.WorkloadName)
+									continue
+								}
+								for _, labels := range component.Labels {
+									if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
+										fmt.Printf("Policy %s for workload %s in %s cluster allows egress to pods with label %s\n",
+											np.Name, work, clusterName, labels)
+										return true, nil
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return false, nil
 	}
-	var flag = false
 
 	fmt.Println("CHECKING NETWORK POLICIES")
 
-	for _, np := range edgeNetworkPolicies.Items {
-		// if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
-		// 	fmt.Println("Continuing cuz nothing found")
-		// 	continue
-		// }
-
-		for work, details := range workload {
-			for _, det := range details.Labels {
-				if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
-					fmt.Println("Continuing cuz nothing found")
-					continue
-				}
-
-				for _, egress := range np.Spec.Egress {
-					for _, to := range egress.To {
-						for _, egre := range details.Egress {
-							component, exists := workload[egre]
-							if !exists {
-								fmt.Println("To Pod Egress not found:", details.WorkloadName)
-								continue
-							}
-							for _, labels := range component.Labels {
-								if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
-									fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
-										np.Name, work, labels)
-									flag = true
-								}
-							}
-						}
-					}
-
-				}
-			}
-		}
-
+	// Check Edge Cluster Policies
+	edgeNetworkPolicies, err := edgeClientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return false, fmt.Errorf("failed to list network policies in edge cluster: %v", err)
+	}
+	flag, err := checkPolicies(edgeNetworkPolicies, "EDGE")
+	if err != nil || flag {
+		return flag, err
 	}
 
+	// Check Core Cluster Policies
 	coreNetworkPolicies, err := coreClientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return false, fmt.Errorf("failed to list network policies: %v", err)
+		return false, fmt.Errorf("failed to list network policies in core cluster: %v", err)
 	}
-
-	for _, np := range coreNetworkPolicies.Items {
-		for work, details := range workload {
-			for _, det := range details.Labels {
-				if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
-					fmt.Println("Continuing cuz nothing found")
-					continue
-				}
-
-				for _, egress := range np.Spec.Egress {
-					for _, to := range egress.To {
-						for _, egre := range details.Egress {
-							component, exists := workload[egre]
-							if !exists {
-								fmt.Println("To Pod Egress not found:", details.WorkloadName)
-								continue
-							}
-							for _, labels := range component.Labels {
-								if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
-									fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
-										np.Name, work, labels)
-									flag = true
-								}
-							}
-						}
-					}
-
-				}
-			}
-		}
-
-	}
-
+	flag, err = checkPolicies(coreNetworkPolicies, "CORE")
 	return flag, err
 }
 
