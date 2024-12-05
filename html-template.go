@@ -93,8 +93,8 @@ var tmplStr = `
                                     <strong>TLS Check:</strong> 
                                     {{range .}}
                                         <div>
-                                            <span class="status {{if eq .Status }}status-pass{{else}}status-fail{{end}}">
-                                                {{if eq .Status }}✓{{else}}✗{{end}}
+                                            <span class="status {{if .Status }}status-pass{{else}}status-fail{{end}}">
+                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
@@ -106,8 +106,8 @@ var tmplStr = `
                                     <strong>Ingress Policy Check:</strong>
                                     {{range .}}
                                         <div>
-                                            <span class="status {{if eq .Status }}status-pass{{else}}status-fail{{end}}">
-                                                {{if eq .Status }}✓{{else}}✗{{end}}
+                                            <span class="status {{if  .Status }}status-pass{{else}}status-fail{{end}}">
+                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
@@ -119,8 +119,8 @@ var tmplStr = `
                                     <strong>Sensitive Assets Check:</strong>
                                     {{range .}}
                                         <div>
-                                            <span class="status {{if eq .Status }}status-pass{{else}}status-fail{{end}}">
-                                                {{if eq .Status }}✓{{else}}✗{{end}}
+                                            <span class="status {{if  .Status }}status-pass{{else}}status-fail{{end}}">
+                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
