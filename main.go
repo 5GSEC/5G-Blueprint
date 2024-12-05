@@ -275,6 +275,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, work Workload, workloa
 								fmt.Printf("Policy %s for workload %s in cluster allows egress to pods with label %s\n",
 									np.Name, work, labels)
 								flag = true
+								break
 							}
 						}
 					}
