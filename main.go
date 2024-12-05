@@ -210,6 +210,8 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 		return false, nil, fmt.Errorf("failed to list network policies: %v", err)
 	}
 
+	var rLabel []string
+
 	for _, np := range networkPolicies.Items {
 		for _, egresscheck := range w.Egress {
 			match := false
@@ -222,6 +224,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 					for _, lab := range component.Labels {
 						if matchesLabelSelector(to.PodSelector.MatchLabels, lab) {
 							match = true
+							rLabel = w.Labels
 							break
 						}
 					}
@@ -236,7 +239,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 		}
 	}
 
-	return true, w.Labels, err
+	return true, rLabel, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
