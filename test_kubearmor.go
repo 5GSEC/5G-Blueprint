@@ -12,19 +12,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func main() {
 	// Load in-cluster Kubernetes config
-	config, err := rest.InClusterConfig()
+	edgeconfig, err := clientcmd.BuildConfigFromFlags("", "/home/ubuntu/.kube/edge-kubeconfig")
 	if err != nil {
-		fmt.Printf("Error creating in-cluster config: %v\n", err)
-		os.Exit(1)
+		panic(err.Error())
 	}
-
 	// Initialize Kubernetes dynamic client
-	dynClient, err := dynamic.NewForConfig(config)
+	dynClient, err := dynamic.NewForConfig(edgeconfig)
 	if err != nil {
 		fmt.Printf("Error creating dynamic client: %v\n", err)
 		os.Exit(1)
