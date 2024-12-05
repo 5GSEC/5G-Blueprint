@@ -100,7 +100,7 @@ func main() {
 		}
 		if exists {
 
-			edgeSens, edgekspCheck, err := checkSensitiveDirs(edgeconfig, info.SensitiveAssetLocations)
+			edgeSens, edgekspCheck, err := checkSensitiveDirs(edgeconfig, info.SensitiveAssetLocations, info.Labels)
 			if err != nil {
 				panic(err.Error())
 			}
