@@ -93,29 +93,27 @@ func main() {
 		workloadMap[workload.WorkloadName] = workload
 	}
 
-	edgeNetwork, err := verifyNetworkPolicy(edgeclientset, workloadMap)
-	if err != nil {
-		panic(err.Error())
+	for _, info := range workloadMap {
+		exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
+		if err != nil {
+			panic(err.Error())
+		}
+		if exists {
+			edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
+			if err != nil {
+				panic(err.Error())
+			}
+			fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork, "WORKLOAD: ", edgeWorkloads)
+			coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
+			fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork, "WORKLOAD: ", coreWorkloads)
+			// if network {
+			// 	info.Checkpoint.EgressCheck = true
+
+			// 	fmt.Println("Network policy does indeed exist for: ", name)
+			// }
+
+		}
 	}
-	fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork)
-	coreNetwork, err := verifyNetworkPolicy(coreclientset, workloadMap)
-	fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork)
-
-	// for name, info := range workloadMap {
-	// 	exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
-	// 	if err != nil {
-	// 		panic(err.Error())
-	// 	}
-	// 	if exists {
-
-	// 		// if network {
-	// 		// 	info.Checkpoint.EgressCheck = true
-
-	// 		// 	fmt.Println("Network policy does indeed exist for: ", name)
-	// 		// }
-
-	// 	}
-	// }
 
 }
 
@@ -239,13 +237,12 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 	return true, nil
 }
 
-func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Workload) (bool, error) {
+func verifyNetworkPolicy(clientset *kubernetes.Clientset, work Workload, workload map[string]Workload) (bool, Workload, error) {
 	networkPolicies, err := clientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return false, fmt.Errorf("failed to list network policies: %v", err)
+		return false, Workload{}, fmt.Errorf("failed to list network policies: %v", err)
 	}
-	var edgeFlag = false
-	var coreFlag = false
+	var flag = false
 
 	fmt.Println("CHECKING NETWORK POLICIES")
 
@@ -255,38 +252,40 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Wo
 		// 	continue
 		// }
 
-		for work, details := range workload {
-			for _, det := range details.Labels {
-				if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
-					fmt.Println("Continuing cuz nothing found")
-					continue
-				}
+		for _, lab := range work.Labels {
+			if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, lab) {
+				fmt.Println("Continuing cuz nothing found")
+				continue
+			}
+		}
 
-				for _, egress := range np.Spec.Egress {
-					for _, to := range egress.To {
-						for _, egre := range details.Egress {
-							component, exists := workload[egre]
-							if !exists {
-								fmt.Println("To Pod Egress not found:", details.WorkloadName)
-								continue
-							}
-							for _, labels := range component.Labels {
-								if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
-									fmt.Printf("Policy %s for workload %s in cluster allows egress to pods with label %s\n",
-										np.Name, work, labels)
-									edgeFlag = true
-								}
+		for _, egress := range np.Spec.Egress {
+			for _, to := range egress.To {
+
+				for work, details := range workload {
+					for _, egre := range details.Egress {
+						component, exists := workload[egre]
+						if !exists {
+							fmt.Println("To Pod Egress not found:", details.WorkloadName)
+							continue
+						}
+
+						for _, labels := range component.Labels {
+							if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
+								fmt.Printf("Policy %s for workload %s in cluster allows egress to pods with label %s\n",
+									np.Name, work, labels)
+								flag = true
 							}
 						}
 					}
 
 				}
 			}
-		}
 
+		}
 	}
 
-	return edgeFlag || coreFlag, err
+	return flag, work, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
