@@ -138,7 +138,7 @@ func main() {
 
 				coreNetwork, coreLabel, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
 
-				fmt.Println("CORE Network Policy there?: ", " For Label: ", coreLabel)
+				fmt.Println("CORE Network Policy there?:", coreNetwork, " For Label: ", coreLabel)
 
 				if reflect.DeepEqual(info.Labels, coreLabel) && risk.WorkloadName == info.WorkloadName && coreNetwork {
 					for j, riskList := range risk.Risks {
