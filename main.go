@@ -13,17 +13,17 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type WorkloadMap struct {
-	Workload                string   `yaml:"Component Name"`
-	WorkloadLabels          []string `yaml:"Workload Labels"`
-	SensitiveAssetLocations []string `yaml:"Sensitive Asset Locations"`
-	Egress                  []string `yaml:"Egress,omitempty"`
-	Ingress                 []string `yaml:"Ingress,omitempty"`
-	RiskDescription         string   `yaml:"Risk Description,omitempty"`
-	Severity                string   `yaml:"Severity,omitempty"`
-	Checkpoints             []string `yaml:"Checkpoints,omitempty"`
-	RiskID                  string   `yaml:"Risk ID,omitempty"`
-}
+// type WorkloadMap struct {
+// 	Workload                string   `yaml:"Component Name"`
+// 	WorkloadLabels          []string `yaml:"Workload Labels"`
+// 	SensitiveAssetLocations []string `yaml:"Sensitive Asset Locations"`
+// 	Egress                  []string `yaml:"Egress,omitempty"`
+// 	Ingress                 []string `yaml:"Ingress,omitempty"`
+// 	RiskDescription         string   `yaml:"Risk Description,omitempty"`
+// 	Severity                string   `yaml:"Severity,omitempty"`
+// 	Checkpoints             []string `yaml:"Checkpoints,omitempty"`
+// 	RiskID                  string   `yaml:"Risk ID,omitempty"`
+// }
 
 type Risk struct {
 	RiskID          string   `yaml:"risk_id"`
@@ -99,7 +99,7 @@ func main() {
 			panic(err.Error())
 		}
 		if exists {
-			network, err := verifyNetworkPolicy(edgeclientset, coreclientset, info.Labels)
+			network, err := verifyNetworkPolicy(edgeclientset, coreclientset, workloadMap)
 			if err != nil {
 				panic(err.Error())
 			}
@@ -132,46 +132,46 @@ func main() {
 // 	return result
 // }
 
-func mergeMaps(map1 map[string]WorkloadMap, map2 map[string][]map[string]interface{}) map[string]WorkloadMap {
-	mergedMap := make(map[string]WorkloadMap)
+// func mergeMaps(map1 map[string]WorkloadMap, map2 map[string][]map[string]interface{}) map[string]WorkloadMap {
+// 	mergedMap := make(map[string]WorkloadMap)
 
-	for key, wlm := range map1 {
-		if data, exists := map2[key]; exists {
-			for _, item := range data {
-				if labels, ok := item["Workload Labels"]; ok {
-					wlm.WorkloadLabels = append(wlm.WorkloadLabels, labels.([]string)...)
-				}
-				if locations, ok := item["Sensitive Asset Locations"]; ok {
-					wlm.SensitiveAssetLocations = append(wlm.SensitiveAssetLocations, locations.([]string)...)
-				}
-				if egress, ok := item["Egress"]; ok {
-					wlm.Egress = append(wlm.Egress, egress.([]string)...)
-				}
-				if ingress, ok := item["Ingress"]; ok {
-					wlm.Ingress = append(wlm.Ingress, ingress.([]string)...)
-				}
+// 	for key, wlm := range map1 {
+// 		if data, exists := map2[key]; exists {
+// 			for _, item := range data {
+// 				if labels, ok := item["Workload Labels"]; ok {
+// 					wlm.WorkloadLabels = append(wlm.WorkloadLabels, labels.([]string)...)
+// 				}
+// 				if locations, ok := item["Sensitive Asset Locations"]; ok {
+// 					wlm.SensitiveAssetLocations = append(wlm.SensitiveAssetLocations, locations.([]string)...)
+// 				}
+// 				if egress, ok := item["Egress"]; ok {
+// 					wlm.Egress = append(wlm.Egress, egress.([]string)...)
+// 				}
+// 				if ingress, ok := item["Ingress"]; ok {
+// 					wlm.Ingress = append(wlm.Ingress, ingress.([]string)...)
+// 				}
 
-				// Handle extra fields
-				if riskDesc, ok := item["risk_description"]; ok {
-					wlm.RiskDescription = riskDesc.(string)
-				}
-				if severity, ok := item["severity"]; ok {
-					wlm.Severity = severity.(string)
-				}
-				if checkpoints, ok := item["checkpoints"]; ok {
-					wlm.Checkpoints = append(wlm.Checkpoints, checkpoints.([]string)...)
-				}
-				if riskID, ok := item["risk_id"]; ok {
-					wlm.RiskID = riskID.(string)
-				}
-			}
-		}
-		// Add the merged WorkloadMap to the result map
-		mergedMap[key] = wlm
-	}
+// 				// Handle extra fields
+// 				if riskDesc, ok := item["risk_description"]; ok {
+// 					wlm.RiskDescription = riskDesc.(string)
+// 				}
+// 				if severity, ok := item["severity"]; ok {
+// 					wlm.Severity = severity.(string)
+// 				}
+// 				if checkpoints, ok := item["checkpoints"]; ok {
+// 					wlm.Checkpoints = append(wlm.Checkpoints, checkpoints.([]string)...)
+// 				}
+// 				if riskID, ok := item["risk_id"]; ok {
+// 					wlm.RiskID = riskID.(string)
+// 				}
+// 			}
+// 		}
+// 		// Add the merged WorkloadMap to the result map
+// 		mergedMap[key] = wlm
+// 	}
 
-	return mergedMap
-}
+// 	return mergedMap
+// }
 
 func mapWorkloadToRisk() map[string][]map[string]interface{} {
 
@@ -236,7 +236,7 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 	return true, nil
 }
 
-func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workloadLabels []string) (bool, error) {
+func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload map[string]Workload) (bool, error) {
 	edgeNetworkPolicies, err := edgeClientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return false, fmt.Errorf("failed to list network policies: %v", err)
@@ -251,18 +251,33 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 		// 	continue
 		// }
 
-		for _, egress := range np.Spec.Egress {
-			for _, to := range egress.To {
+		for work, details := range workload {
+			for _, det := range details.Labels {
+				if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
+					fmt.Println("Continuing cuz nothing found")
+					continue
+				}
 
-				for _, labels := range workloadLabels {
-					if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
-						fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
-							np.Name, labels, labels)
-						flag = true
+				for _, egress := range np.Spec.Egress {
+					for _, to := range egress.To {
+						for _, egre := range details.Egress {
+							component, exists := workload[egre]
+							if !exists {
+								fmt.Println("To Pod Egress not found:", details.WorkloadName)
+								continue
+							}
+							for _, labels := range component.Labels {
+								if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
+									fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
+										np.Name, work, labels)
+									flag = true
+								}
+							}
+						}
 					}
+
 				}
 			}
-
 		}
 
 	}
@@ -273,19 +288,35 @@ func verifyNetworkPolicy(edgeClientset *kubernetes.Clientset, coreClientset *kub
 	}
 
 	for _, np := range coreNetworkPolicies.Items {
-		for _, egress := range np.Spec.Egress {
-			for _, to := range egress.To {
+		for work, details := range workload {
+			for _, det := range details.Labels {
+				if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
+					fmt.Println("Continuing cuz nothing found")
+					continue
+				}
 
-				for _, labels := range workloadLabels {
-					if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
-						fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
-							np.Name, labels, labels)
-						flag = true
+				for _, egress := range np.Spec.Egress {
+					for _, to := range egress.To {
+						for _, egre := range details.Egress {
+							component, exists := workload[egre]
+							if !exists {
+								fmt.Println("To Pod Egress not found:", details.WorkloadName)
+								continue
+							}
+							for _, labels := range component.Labels {
+								if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
+									fmt.Printf("Policy %s for workload %s in EDGE cluster allows egress to pods with label %s\n",
+										np.Name, work, labels)
+									flag = true
+								}
+							}
+						}
 					}
+
 				}
 			}
-
 		}
+
 	}
 
 	return flag, err
