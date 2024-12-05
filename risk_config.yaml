@@ -75,7 +75,7 @@
         - description: "Is TLS Enabled?"
         - status: false
       CHK_POLP_EGRESS:
-        - description: "Network Policies for Ingress connections?"
+        - description: "Network Policies for Egress connections?"
         - status: false
       CHK_SENSITIVE_ASSETS:
         - description: "Are Least Permissive Policies enforced for Sensitive Assets?"   
