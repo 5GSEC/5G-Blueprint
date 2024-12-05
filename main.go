@@ -93,7 +93,7 @@ func main() {
 		workloadMap[workload.WorkloadName] = workload
 	}
 
-	for _, info := range workloadMap {
+	for name, info := range workloadMap {
 		exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
 		if err != nil {
 			panic(err.Error())
@@ -106,11 +106,11 @@ func main() {
 			fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork, "WORKLOAD: ", edgeWorkloads)
 			coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
 			fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork, "WORKLOAD: ", coreWorkloads)
-			// if network {
-			// 	info.Checkpoint.EgressCheck = true
+			if edgeNetwork || coreNetwork {
+				info.Checkpoint.EgressCheck = true
 
-			// 	fmt.Println("Network policy does indeed exist for: ", name)
-			// }
+				fmt.Println("Network policy does indeed exist for: ", name)
+			}
 
 		}
 	}
