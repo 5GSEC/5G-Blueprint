@@ -93,7 +93,7 @@ func main() {
 		workloadMap[workload.WorkloadName] = workload
 	}
 
-	for name, info := range workloadMap {
+	for _, info := range workloadMap {
 		exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
 		if err != nil {
 			panic(err.Error())
@@ -105,7 +105,7 @@ func main() {
 				panic(err.Error())
 			}
 			// coreSens, kspCheck, err := checkSensitiveDirs(coreconfig, info.SensitiveAssetLocations)
-			fmt.Println("Sensitive Assets detected for: ", name, "bool: ", edgekspCheck, "Assets: ", edgeSens)
+			fmt.Println("Sensitive Assets detected for: ", info.WorkloadName, "bool: ", edgekspCheck, "Assets: ", edgeSens)
 			// edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
 			// if err != nil {
 			// 	panic(err.Error())
