@@ -93,17 +93,18 @@ func main() {
 		workloadMap[workload.WorkloadName] = workload
 	}
 
+	network, err := verifyNetworkPolicy(edgeclientset, coreclientset, workloadMap)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println(network)
+
 	for name, info := range workloadMap {
 		exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
 		if err != nil {
 			panic(err.Error())
 		}
 		if exists {
-			network, err := verifyNetworkPolicy(edgeclientset, coreclientset, workloadMap)
-			if err != nil {
-				panic(err.Error())
-			}
-			fmt.Println(network)
 
 			if network {
 				info.Checkpoint.EgressCheck = true
