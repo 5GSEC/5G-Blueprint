@@ -58,7 +58,7 @@ type Checkpoint struct {
 
 type CheckpointMap struct {
 	CHK_TLS              []Checkpoint `yaml:"CHK_TLS"`
-	CHK_POLP_EGRESS      []Checkpoint `yaml:"CHK_POLP_INGRESS"`
+	CHK_POLP_EGRESS      []Checkpoint `yaml:"CHK_POLP_EGRESS"`
 	CHK_SENSITIVE_ASSETS []Checkpoint `yaml:"CHK_SENSITIVE_ASSETS"`
 }
 
