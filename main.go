@@ -99,18 +99,22 @@ func main() {
 			panic(err.Error())
 		}
 		if exists {
-			edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
-			if err != nil {
-				panic(err.Error())
-			}
-			fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork, "WORKLOAD: ", edgeWorkloads)
-			coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
-			fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork, "WORKLOAD: ", coreWorkloads)
-			if edgeNetwork || coreNetwork {
-				info.Checkpoint.EgressCheck = true
 
-				fmt.Println("Network policy does indeed exist for: ", name)
-			}
+			edgeSens, edgekspCheck, err := checkSensitiveDirs(edgeconfig, info.SensitiveAssetLocations)
+			// coreSens, kspCheck, err := checkSensitiveDirs(coreconfig, info.SensitiveAssetLocations)
+			fmt.Println("Sensitive Assets detected for: ", name, "bool: ", edgekspCheck, "Assets: ", edgeSens)
+			// edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
+			// if err != nil {
+			// 	panic(err.Error())
+			// }
+			// fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork, "WORKLOAD: ", edgeWorkloads)
+			// coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
+			// fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork, "WORKLOAD: ", coreWorkloads)
+			// if edgeNetwork || coreNetwork {
+			// 	info.Checkpoint.EgressCheck = true
+
+			// 	fmt.Println("Network policy does indeed exist for: ", name)
+			// }
 
 		}
 	}
