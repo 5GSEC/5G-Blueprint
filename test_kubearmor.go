@@ -65,10 +65,10 @@ func main() {
 
 	// Define CEL Expression
 	expression := `
-		policy.spec.selector.matchLabels.matches(workloadLabels) &&
+		policy.spec.selector.matchLabels["App"] == workloadLabels["App"] &&
 		sensitiveAssets.exists(sensitiveAsset, 
 			policy.spec.file.matchPaths.exists(path, path.startsWith(sensitiveAsset)) || 
-			policy.spec.file.matchDirectories.exists(dir, sensitiveAsset.startsWith(dir.dir))
+			policy.spec.file.matchDirectories.exists(dir, sensitiveAsset.startsWith(dir))
 		)
 	`
 
