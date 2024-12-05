@@ -14,6 +14,7 @@ import (
 func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string, labelSelectors []string) ([]string, bool, error) {
 	// Create in-cluster config
 	var Assets []string
+	var matched bool
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to create dynamic client: %w", err)
@@ -101,7 +102,7 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string, labelSelect
 					fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 						policy.GetName(), dirPath, action)
 					Assets = append(Assets, dirPath)
-					// return dirPath, nil
+					matched = true
 				}
 			}
 		}
@@ -131,6 +132,7 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string, labelSelect
 						fmt.Printf("Found sensitive asset in policy %s:\n  Path: %s\n  Action: %s\n",
 							policy.GetName(), filePath, action)
 						Assets = append(Assets, filePath)
+						matched = true
 
 					}
 				}
@@ -138,5 +140,5 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string, labelSelect
 		}
 
 	}
-	return Assets, true, nil
+	return labelSelectors, matched, nil
 }
