@@ -211,10 +211,10 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 	}
 
 	var rLabel []string
+	match := false
 
 	for _, np := range networkPolicies.Items {
 		for _, egresscheck := range w.Egress {
-			match := false
 			component, exists := workload[egresscheck]
 			if !exists {
 				continue
@@ -239,7 +239,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 		}
 	}
 
-	return true, rLabel, err
+	return match, rLabel, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
