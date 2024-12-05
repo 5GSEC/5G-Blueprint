@@ -52,7 +52,6 @@
   - risk_id: "3GPP 33.501"
     workload: 
      - "NRF"
-     - "UDR"
     risk_description: "No Egress connections should be allowed from NRF at runtime."
     severity: "High"
     checkpoints:

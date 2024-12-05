@@ -58,7 +58,7 @@ type Checkpoint struct {
 
 type CheckpointMap struct {
 	CHK_TLS              []Checkpoint `yaml:"CHK_TLS"`
-	CHK_POLP_INGRESS     []Checkpoint `yaml:"CHK_POLP_INGRESS"`
+	CHK_POLP_EGRESS      []Checkpoint `yaml:"CHK_POLP_INGRESS"`
 	CHK_SENSITIVE_ASSETS []Checkpoint `yaml:"CHK_SENSITIVE_ASSETS"`
 }
 
@@ -126,10 +126,22 @@ func main() {
 				if err != nil {
 					panic(err.Error())
 				}
+
+				// coreLabel, coreKSPCheck, er := checkSensitiveDirs(coreconfig. info.SensitiveAssetLocations, info.Labels)
 				if reflect.DeepEqual(info.Labels, edgeLabel) && risk.WorkloadName == info.WorkloadName && edgekspCheck {
 					for j, riskList := range risk.Risks {
-						for k, _ := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
+						for k := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
 							workloadRisks[i].Risks[j].Checkpoints.CHK_SENSITIVE_ASSETS[k].Status = true
+						}
+					}
+				}
+
+				coreNetwork, coreLabel, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
+
+				if reflect.DeepEqual(info.Labels, coreLabel) && risk.WorkloadName == info.WorkloadName && coreNetwork {
+					for j, riskList := range risk.Risks {
+						for k := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
+							workloadRisks[i].Risks[j].Checkpoints.CHK_POLP_EGRESS[k].Status = true
 						}
 					}
 				}
@@ -156,63 +168,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
-
-// func mergeDuplicates(slice []MergedData) []MergedData {
-// 	result := []MergedData{}
-// 	seen := make(map[string]bool)
-
-// 	for _, risk := range slice {
-// 		for _, labels := range risk.WorkloadLabels {
-// 			if _, exists := seen[labels]; !exists {
-// 				result = append(result, risk)
-// 				seen[labels] = true
-// 			}
-// 		}
-// 	}
-
-// 	return result
-// }
-
-// func mergeMaps(map1 map[string]WorkloadMap, map2 map[string][]map[string]interface{}) map[string]WorkloadMap {
-// 	mergedMap := make(map[string]WorkloadMap)
-
-// 	for key, wlm := range map1 {
-// 		if data, exists := map2[key]; exists {
-// 			for _, item := range data {
-// 				if labels, ok := item["Workload Labels"]; ok {
-// 					wlm.WorkloadLabels = append(wlm.WorkloadLabels, labels.([]string)...)
-// 				}
-// 				if locations, ok := item["Sensitive Asset Locations"]; ok {
-// 					wlm.SensitiveAssetLocations = append(wlm.SensitiveAssetLocations, locations.([]string)...)
-// 				}
-// 				if egress, ok := item["Egress"]; ok {
-// 					wlm.Egress = append(wlm.Egress, egress.([]string)...)
-// 				}
-// 				if ingress, ok := item["Ingress"]; ok {
-// 					wlm.Ingress = append(wlm.Ingress, ingress.([]string)...)
-// 				}
-
-// 				// Handle extra fields
-// 				if riskDesc, ok := item["risk_description"]; ok {
-// 					wlm.RiskDescription = riskDesc.(string)
-// 				}
-// 				if severity, ok := item["severity"]; ok {
-// 					wlm.Severity = severity.(string)
-// 				}
-// 				if checkpoints, ok := item["checkpoints"]; ok {
-// 					wlm.Checkpoints = append(wlm.Checkpoints, checkpoints.([]string)...)
-// 				}
-// 				if riskID, ok := item["risk_id"]; ok {
-// 					wlm.RiskID = riskID.(string)
-// 				}
-// 			}
-// 		}
-// 		// Add the merged WorkloadMap to the result map
-// 		mergedMap[key] = wlm
-// 	}
-
-// 	return mergedMap
-// }
 
 func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload Workload) (bool, error) {
 
@@ -247,54 +202,39 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 	return true, nil
 }
 
-func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload map[string]Workload) (bool, string, error) {
-	networkPolicies, err := clientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
+func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload map[string]Workload) (bool, []string, error) {
+	networkPolicies, err := clientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{}) // add label selector filter
 	if err != nil {
-		return false, "", fmt.Errorf("failed to list network policies: %v", err)
+		return false, nil, fmt.Errorf("failed to list network policies: %v", err)
 	}
-	// var flag = false
 
 	for _, np := range networkPolicies.Items {
-		// if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
-		// 	fmt.Println("Continuing cuz nothing found")
-		// 	continue
-		// }
-
-		for _, lab := range w.Labels {
-			if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, lab) {
+		for _, egresscheck := range w.Egress {
+			match := false
+			component, exists := workload[egresscheck]
+			if !exists {
 				continue
 			}
-		}
-
-		for _, egress := range np.Spec.Egress {
-			for _, to := range egress.To {
-
-				for work, details := range workload {
-					for _, egre := range details.Egress {
-						component, exists := workload[egre]
-						if !exists {
-							continue
-						}
-
-						for _, labels := range component.Labels {
-							if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
-								fmt.Printf("Policy %s for workload %s in cluster allows egress to pods with label %s\n",
-									np.Name, work, labels)
-								w.WorkloadName = work
-								return true, w.WorkloadName, nil
-							} else {
-								return false, w.WorkloadName, err
-							}
+			for _, egress := range np.Spec.Egress {
+				for _, to := range egress.To {
+					for _, lab := range component.Labels {
+						if matchesLabelSelector(to.PodSelector.MatchLabels, lab) {
+							match = true
+							break
 						}
 					}
-
+				}
+				if match {
+					break
 				}
 			}
-
+			if !match {
+				return false, nil, nil
+			}
 		}
 	}
 
-	return false, w.WorkloadName, err
+	return true, w.Labels, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
