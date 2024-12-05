@@ -273,7 +273,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 								w.WorkloadName = work
 								return true, w.WorkloadName, nil
 							} else {
-								return false, work, err
+								return false, w.WorkloadName, err
 							}
 						}
 					}
