@@ -237,11 +237,11 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 	return true, nil
 }
 
-func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Workload) (bool, Workload, error) {
+func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Workload) (bool, string, error) {
 	var w Workload
 	networkPolicies, err := clientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return false, Workload{}, fmt.Errorf("failed to list network policies: %v", err)
+		return false, "", fmt.Errorf("failed to list network policies: %v", err)
 	}
 	var flag = false
 
@@ -286,7 +286,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Wo
 		}
 	}
 
-	return flag, w, err
+	return flag, w.WorkloadName, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
