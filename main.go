@@ -106,6 +106,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load risks: %v", err)
 	}
+	for i := range risks {
+		CleanRisk(&risks[i])
+	}
 
 	// tmpl := template.Must(template.New("accordion").Parse(tmplStr))
 	workloadRisks := groupRisksByWorkload(risks)
@@ -186,6 +189,26 @@ func main() {
 	log.Println("Server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
+}
+
+// Deduplicate removes duplicate checkpoints based on their description.
+func Deduplicate(checkpoints []Checkpoint) []Checkpoint {
+	unique := make(map[string]bool)
+	var deduplicated []Checkpoint
+	for _, cp := range checkpoints {
+		if !unique[cp.Description] {
+			unique[cp.Description] = true
+			deduplicated = append(deduplicated, cp)
+		}
+	}
+	return deduplicated
+}
+
+// CleanRisk removes duplicate checkpoints from a risk's checkpoint map.
+func CleanRisk(risk *Risk) {
+	risk.Checkpoints.CHK_TLS = Deduplicate(risk.Checkpoints.CHK_TLS)
+	risk.Checkpoints.CHK_POLP_EGRESS = Deduplicate(risk.Checkpoints.CHK_POLP_EGRESS)
+	risk.Checkpoints.CHK_SENSITIVE_ASSETS = Deduplicate(risk.Checkpoints.CHK_SENSITIVE_ASSETS)
 }
 
 func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload Workload) (bool, error) {
