@@ -238,7 +238,7 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 }
 
 func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Workload) (bool, Workload, error) {
-	var work Workload
+	var w Workload
 	networkPolicies, err := clientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return false, Workload{}, fmt.Errorf("failed to list network policies: %v", err)
@@ -253,7 +253,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Wo
 		// 	continue
 		// }
 
-		for _, lab := range work.Labels {
+		for _, lab := range w.Labels {
 			if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, lab) {
 				fmt.Println("Continuing cuz nothing found")
 				continue
@@ -274,6 +274,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Wo
 							if to.PodSelector != nil && matchesLabelSelector(to.PodSelector.MatchLabels, labels) {
 								fmt.Printf("Policy %s for workload %s in cluster allows egress to pods with label %s\n",
 									np.Name, work, labels)
+								w.WorkloadName = work
 								flag = true
 							}
 						}
@@ -285,7 +286,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Wo
 		}
 	}
 
-	return flag, work, err
+	return flag, w, err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
