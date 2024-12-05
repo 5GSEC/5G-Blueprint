@@ -99,7 +99,7 @@ var tmplStr = `
                                         </div>
                                     {{end}}
                                 </div>
-                            {{end}}
+                           
                             {{with .Checkpoints.CHK_POLP_INGRESS}}
                                 <div class="checkpoint">
                                     <strong>Egress Policy Check:</strong>
@@ -111,7 +111,7 @@ var tmplStr = `
                                         </div>
                                     {{end}}
                                 </div>
-                            {{end}}
+                           
                             {{with .Checkpoints.CHK_SENSITIVE_ASSETS}}
                                 <div class="checkpoint">
                                     <strong>Sensitive Assets Check:</strong>
@@ -121,7 +121,7 @@ var tmplStr = `
                                             </span>
                                             {{.Description}}
                                         </div>
-                                    {{end}}
+                                
                                 </div>
                             {{end}}
                         </div>
