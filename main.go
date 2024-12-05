@@ -107,6 +107,14 @@ func main() {
 		log.Fatalf("Failed to load risks: %v", err)
 	}
 
+	jso, err := json.MarshalIndent(risks, "", "  ")
+	if err != nil {
+		fmt.Printf("Error marshaling to JSON: %v\n", err)
+		return
+	}
+
+	fmt.Println(string(jso))
+
 	// tmpl := template.Must(template.New("accordion").Parse(tmplStr))
 	workloadRisks := groupRisksByWorkload(risks)
 
