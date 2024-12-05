@@ -99,12 +99,12 @@ func main() {
 			panic(err.Error())
 		}
 		if exists {
-			edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
+			edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, workloadMap)
 			if err != nil {
 				panic(err.Error())
 			}
 			fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork, "WORKLOAD: ", edgeWorkloads)
-			coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
+			coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, workloadMap)
 			fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork, "WORKLOAD: ", coreWorkloads)
 			// if network {
 			// 	info.Checkpoint.EgressCheck = true
@@ -237,7 +237,8 @@ func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernet
 	return true, nil
 }
 
-func verifyNetworkPolicy(clientset *kubernetes.Clientset, work Workload, workload map[string]Workload) (bool, Workload, error) {
+func verifyNetworkPolicy(clientset *kubernetes.Clientset, workload map[string]Workload) (bool, Workload, error) {
+	var work Workload
 	networkPolicies, err := clientset.NetworkingV1().NetworkPolicies("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return false, Workload{}, fmt.Errorf("failed to list network policies: %v", err)
