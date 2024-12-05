@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
+	"net/http"
+	"reflect"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -26,21 +29,21 @@ import (
 // }
 
 type Risk struct {
-	RiskID          string   `yaml:"risk_id"`
-	Workload        []string `yaml:"workload"`
-	RiskDescription string   `yaml:"risk_description"`
-	Severity        string   `yaml:"severity"`
-	Checkpoints     []string `yaml:"checkpoints"`
+	RiskID          string        `yaml:"risk_id"`
+	Workload        []string      `yaml:"workload"`
+	RiskDescription string        `yaml:"risk_description"`
+	Severity        string        `yaml:"severity"`
+	Checkpoints     CheckpointMap `yaml:"checkpoints"`
 }
 
 // Define the structure for the workload
 type Workload struct {
-	WorkloadName            string      `yaml:"workload_name"`
-	Labels                  []string    `yaml:"labels"` // Labels are key-value pairs
-	SensitiveAssetLocations []string    `yaml:"sensitive_asset_locations"`
-	Egress                  []string    `yaml:"egress,omitempty"`
-	Ingress                 []string    `yaml:"ingress,omitempty"`
-	Checkpoint              Checkpoints `yaml:"checkpoints"`
+	WorkloadName            string     `yaml:"workload_name"`
+	Labels                  []string   `yaml:"labels"` // Labels are key-value pairs
+	SensitiveAssetLocations []string   `yaml:"sensitive_asset_locations"`
+	Egress                  []string   `yaml:"egress,omitempty"`
+	Ingress                 []string   `yaml:"ingress,omitempty"`
+	Checkpoint              Checkpoint `yaml:"checkpoints"`
 }
 
 // Define the top-level structure
@@ -48,10 +51,20 @@ type workloadConfig struct {
 	Workloads []Workload `yaml:"workloads"`
 }
 
-type Checkpoints struct {
-	TLSCheck    bool
-	EgressCheck bool
-	PolicyCheck bool
+type Checkpoint struct {
+	Description string `yaml:"description"`
+	Status      bool   `yaml:"status"`
+}
+
+type CheckpointMap struct {
+	CHK_TLS              []Checkpoint `yaml:"CHK_TLS"`
+	CHK_POLP_INGRESS     []Checkpoint `yaml:"CHK_POLP_INGRESS"`
+	CHK_SENSITIVE_ASSETS []Checkpoint `yaml:"CHK_SENSITIVE_ASSETS"`
+}
+
+type WorkloadRisks struct {
+	WorkloadName string
+	Risks        []Risk
 }
 
 func main() {
@@ -87,40 +100,60 @@ func main() {
 		panic(err)
 	}
 
+	risks, err := loadRisks("risk_config.yaml")
+	if err != nil {
+		log.Fatalf("Failed to load risks: %v", err)
+	}
+
+	// tmpl := template.Must(template.New("accordion").Parse(tmplStr))
+	workloadRisks := groupRisksByWorkload(risks)
+
 	// Create a map with workload_name as the key
 	workloadMap := make(map[string]Workload)
 	for _, workload := range entries.Workloads {
 		workloadMap[workload.WorkloadName] = workload
 	}
 
-	for _, info := range workloadMap {
-		exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
-		if err != nil {
-			panic(err.Error())
-		}
-		if exists {
-
-			edgeSens, edgekspCheck, err := checkSensitiveDirs(edgeconfig, info.SensitiveAssetLocations, info.Labels)
+	for i, risk := range workloadRisks {
+		for _, info := range workloadMap {
+			exists, err := verifyWorkloads(edgeclientset, coreclientset, info)
 			if err != nil {
 				panic(err.Error())
 			}
-			// coreSens, kspCheck, err := checkSensitiveDirs(coreconfig, info.SensitiveAssetLocations)
-			fmt.Println("Sensitive Assets detected for: ", info.WorkloadName, "bool: ", edgekspCheck, "Assets: ", edgeSens)
-			// edgeNetwork, edgeWorkloads, err := verifyNetworkPolicy(edgeclientset, info, workloadMap)
-			// if err != nil {
-			// 	panic(err.Error())
-			// }
-			// fmt.Println("EDGE POLICY EXISTS OR NOT: ", edgeNetwork, "WORKLOAD: ", edgeWorkloads)
-			// coreNetwork, coreWorkloads, err := verifyNetworkPolicy(coreclientset, info, workloadMap)
-			// fmt.Println("CORE POLICY EXISTS OR NOT: ", coreNetwork, "WORKLOAD: ", coreWorkloads)
-			// if edgeNetwork || coreNetwork {
-			// 	info.Checkpoint.EgressCheck = true
+			if exists {
 
-			// 	fmt.Println("Network policy does indeed exist for: ", name)
-			// }
+				edgeLabel, edgekspCheck, err := checkSensitiveDirs(edgeconfig, info.SensitiveAssetLocations, info.Labels)
+				if err != nil {
+					panic(err.Error())
+				}
+				if reflect.DeepEqual(info.Labels, edgeLabel) && risk.WorkloadName == info.WorkloadName && edgekspCheck {
+					for j, riskList := range risk.Risks {
+						for k, _ := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
+							workloadRisks[i].Risks[j].Checkpoints.CHK_SENSITIVE_ASSETS[k].Status = true
+						}
+					}
+				}
 
+				// 	fmt.Println("Network policy does indeed exist for: ", name)
+				// }
+
+			}
 		}
 	}
+
+	tmpl := template.Must(template.New("accordion").Parse(tmplStr))
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		workloadRisks := groupRisksByWorkload(risks)
+		err := tmpl.Execute(w, workloadRisks)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	log.Println("Server starting on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 
 }
 
@@ -180,36 +213,6 @@ func main() {
 
 // 	return mergedMap
 // }
-
-func mapWorkloadToRisk() map[string][]map[string]interface{} {
-
-	data, err := ioutil.ReadFile("risk_config.yaml")
-	if err != nil {
-		log.Fatalf("error reading YAML file: %v", err)
-	}
-
-	workloadToRiskMapping := make(map[string][]map[string]interface{})
-
-	// Parse the YAML data into Go structs
-	var risks []Risk
-	err = yaml.Unmarshal(data, &risks)
-	if err != nil {
-		log.Fatalf("error unmarshalling YAML data: %v", err)
-	}
-
-	for _, risk := range risks {
-		for _, workload := range risk.Workload {
-			workloadToRiskMapping[workload] = append(workloadToRiskMapping[workload], map[string]interface{}{
-				"risk_id":          risk.RiskID,
-				"risk_description": risk.RiskDescription,
-				"severity":         risk.Severity,
-				"checkpoints":      risk.Checkpoints,
-			})
-		}
-	}
-
-	return workloadToRiskMapping
-}
 
 func verifyWorkloads(edgeCientset *kubernetes.Clientset, coreClientset *kubernetes.Clientset, workload Workload) (bool, error) {
 
