@@ -143,10 +143,10 @@ func main() {
 				fmt.Println("CORE Network Policy there?:", coreNetwork, " For Label: ", coreLabel)
 
 				if reflect.DeepEqual(info.Labels, coreLabel) && risk.WorkloadName == info.WorkloadName && coreNetwork {
-					for j, riskList := range risk.Risks {
-						for k := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
-							workloadRisks[i].Risks[j].Checkpoints.CHK_POLP_EGRESS[k].Status = true
-						}
+					for j, _ := range risk.Risks {
+						// for k := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
+						workloadRisks[i].Risks[j].Checkpoints.CHK_POLP_EGRESS[0].Status = true
+						// }
 					}
 				}
 
