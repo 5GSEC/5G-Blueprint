@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -10,7 +11,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) ([]string, bool, error) {
+func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string, labelSelectors []string) ([]string, bool, error) {
 	// Create in-cluster config
 	var Assets []string
 	dynamicClient, err := dynamic.NewForConfig(config)
@@ -31,10 +32,42 @@ func checkSensitiveDirs(config *rest.Config, sensitiveDirs []string) ([]string, 
 		return nil, false, fmt.Errorf("failed to list policies: %w", err)
 	}
 
+	// Convert labelSelectors []string to a map for easy matching
+	labelSelectorMap := make(map[string]string)
+	for _, selector := range labelSelectors {
+		parts := strings.Split(selector, "=")
+		if len(parts) == 2 {
+			labelSelectorMap[parts[0]] = parts[1]
+		}
+	}
+
 	for _, policy := range policies.Items {
 		spec, ok := policy.Object["spec"].(map[string]interface{})
 		if !ok {
 			continue
+		}
+
+		// Check if the policy matches the specified labels
+		selector, ok := spec["selector"].(map[string]interface{})
+		if ok {
+			matchLabels, ok := selector["matchLabels"].(map[string]interface{})
+			if ok {
+				// Check if the labels match the provided label selectors (app=value)
+				matches := true
+				for key, value := range labelSelectorMap {
+					if policyValue, exists := matchLabels[key]; !exists || policyValue != value {
+						matches = false
+						break
+					}
+				}
+
+				// If the policy matches the label selector, continue checking for sensitive directories
+				if matches {
+					fmt.Printf("Policy %s matches label selector: %v\n", policy.GetName(), labelSelectorMap)
+				} else {
+					continue
+				}
+			}
 		}
 
 		file, ok := spec["file"].(map[string]interface{})
