@@ -65,3 +65,19 @@
         - description: "Are Least Permissive Policies enforced for Sensitive Assets?"   
         - status: false
   
+  - risk_id: "MITRE-5GCORE"
+    workload:
+      - "SMF"
+    risk_description: "There should be only one EGRESS connection i.e to UPF from SMF"
+    severity: "High"
+    checkpoints:
+      CHK_TLS:
+        - description: "Is TLS Enabled?"
+        - status: false
+      CHK_POLP_EGRESS:
+        - description: "Network Policies for Ingress connections?"
+        - status: false
+      CHK_SENSITIVE_ASSETS:
+        - description: "Are Least Permissive Policies enforced for Sensitive Assets?"   
+        - status: false    
+  
