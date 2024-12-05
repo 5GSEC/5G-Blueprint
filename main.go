@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 
@@ -29,42 +31,42 @@ import (
 // }
 
 type Risk struct {
-	RiskID          string        `yaml:"risk_id"`
-	Workload        []string      `yaml:"workload"`
-	RiskDescription string        `yaml:"risk_description"`
-	Severity        string        `yaml:"severity"`
-	Checkpoints     CheckpointMap `yaml:"checkpoints"`
+	RiskID          string        `json:"risk_id" yaml:"risk_id"`
+	Workload        []string      `json:"workload" yaml:"workload"`
+	RiskDescription string        `json:"risk_description" yaml:"risk_description"`
+	Severity        string        `json:"severity" yaml:"severity"`
+	Checkpoints     CheckpointMap `json:"checkpoints" yaml:"checkpoints"`
 }
 
 // Define the structure for the workload
 type Workload struct {
-	WorkloadName            string     `yaml:"workload_name"`
-	Labels                  []string   `yaml:"labels"` // Labels are key-value pairs
-	SensitiveAssetLocations []string   `yaml:"sensitive_asset_locations"`
-	Egress                  []string   `yaml:"egress,omitempty"`
-	Ingress                 []string   `yaml:"ingress,omitempty"`
-	Checkpoint              Checkpoint `yaml:"checkpoints"`
+	WorkloadName            string     `json:"workload_name" yaml:"workload_name"`
+	Labels                  []string   `json:"labels" yaml:"labels"` // Labels are key-value pairs
+	SensitiveAssetLocations []string   `json:"sensitive_asset_locations" yaml:"sensitive_asset_locations"`
+	Egress                  []string   `json:"egress,omitempty" yaml:"egress,omitempty"`
+	Ingress                 []string   `json:"ingress,omitempty" yaml:"ingress,omitempty"`
+	Checkpoint              Checkpoint `json:"checkpoints" yaml:"checkpoints"`
 }
 
 // Define the top-level structure
 type workloadConfig struct {
-	Workloads []Workload `yaml:"workloads"`
+	Workloads []Workload `json:"workloads" yaml:"workloads"`
 }
 
 type Checkpoint struct {
-	Description string `yaml:"description"`
-	Status      bool   `yaml:"status"`
+	Description string `json:"description" yaml:"description"`
+	Status      bool   `json:"status" yaml:"status"`
 }
 
 type CheckpointMap struct {
-	CHK_TLS              []Checkpoint `yaml:"CHK_TLS"`
-	CHK_POLP_EGRESS      []Checkpoint `yaml:"CHK_POLP_EGRESS"`
-	CHK_SENSITIVE_ASSETS []Checkpoint `yaml:"CHK_SENSITIVE_ASSETS"`
+	CHK_TLS              []Checkpoint `json:"CHK_TLS" yaml:"CHK_TLS"`
+	CHK_POLP_EGRESS      []Checkpoint `json:"CHK_POLP_EGRESS" yaml:"CHK_POLP_EGRESS"`
+	CHK_SENSITIVE_ASSETS []Checkpoint `json:"CHK_SENSITIVE_ASSETS" yaml:"CHK_SENSITIVE_ASSETS"`
 }
 
 type WorkloadRisks struct {
-	WorkloadName string
-	Risks        []Risk
+	WorkloadName string `json:"workload_name" yaml:"workload_name"`
+	Risks        []Risk `json:"risks" yaml:"risks"`
 }
 
 func main() {
@@ -153,6 +155,21 @@ func main() {
 
 			}
 		}
+	}
+
+	// Convert to JSON with pretty formatting
+	jsonData, err := json.MarshalIndent(workloadRisks, "", "  ")
+	if err != nil {
+		fmt.Printf("Error marshaling to JSON: %v\n", err)
+		return
+	}
+
+	// Write to file
+	fileName := "workload_risks.json"
+	err = os.WriteFile(fileName, jsonData, 0644)
+	if err != nil {
+		fmt.Printf("Error writing to file: %v\n", err)
+		return
 	}
 
 	tmpl := template.Must(template.New("accordion").Parse(tmplStr))
