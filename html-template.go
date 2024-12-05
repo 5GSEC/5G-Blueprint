@@ -94,7 +94,6 @@ var tmplStr = `
                                     {{range .}}
                                         <div>
                                             <span class="status {{if .Status }}status-pass{{else}}status-fail{{end}}">
-                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
@@ -103,11 +102,10 @@ var tmplStr = `
                             {{end}}
                             {{with .Checkpoints.CHK_POLP_INGRESS}}
                                 <div class="checkpoint">
-                                    <strong>Ingress Policy Check:</strong>
+                                    <strong>Egress Policy Check:</strong>
                                     {{range .}}
                                         <div>
                                             <span class="status {{if  .Status }}status-pass{{else}}status-fail{{end}}">
-                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
@@ -120,7 +118,6 @@ var tmplStr = `
                                     {{range .}}
                                         <div>
                                             <span class="status {{if  .Status }}status-pass{{else}}status-fail{{end}}">
-                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
