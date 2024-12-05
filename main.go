@@ -59,9 +59,9 @@ type Checkpoint struct {
 }
 
 type CheckpointMap struct {
-	CHK_TLS              []Checkpoint `json:"CHK_TLS" yaml:"CHK_TLS"`
-	CHK_POLP_EGRESS      []Checkpoint `json:"CHK_POLP_EGRESS" yaml:"CHK_POLP_EGRESS"`
-	CHK_SENSITIVE_ASSETS []Checkpoint `json:"CHK_SENSITIVE_ASSETS" yaml:"CHK_SENSITIVE_ASSETS"`
+	CHK_TLS              Checkpoint `json:"CHK_TLS" yaml:"CHK_TLS"`
+	CHK_POLP_EGRESS      Checkpoint `json:"CHK_POLP_EGRESS" yaml:"CHK_POLP_EGRESS"`
+	CHK_SENSITIVE_ASSETS Checkpoint `json:"CHK_SENSITIVE_ASSETS" yaml:"CHK_SENSITIVE_ASSETS"`
 }
 
 type WorkloadRisks struct {
@@ -131,10 +131,8 @@ func main() {
 
 				// coreLabel, coreKSPCheck, er := checkSensitiveDirs(coreconfig. info.SensitiveAssetLocations, info.Labels)
 				if reflect.DeepEqual(info.Labels, edgeLabel) && risk.WorkloadName == info.WorkloadName && edgekspCheck {
-					for j, riskList := range risk.Risks {
-						for k := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
-							workloadRisks[i].Risks[j].Checkpoints.CHK_SENSITIVE_ASSETS[k].Status = true
-						}
+					for _, riskList := range risk.Risks {
+						riskList.Checkpoints.CHK_SENSITIVE_ASSETS.Status = true
 					}
 				}
 
@@ -143,10 +141,10 @@ func main() {
 				fmt.Println("CORE Network Policy there?:", coreNetwork, " For Label: ", coreLabel)
 
 				if reflect.DeepEqual(info.Labels, coreLabel) && risk.WorkloadName == info.WorkloadName && coreNetwork {
-					for j, riskList := range risk.Risks {
-						for k := range riskList.Checkpoints.CHK_SENSITIVE_ASSETS {
-							workloadRisks[i].Risks[j].Checkpoints.CHK_POLP_EGRESS[k].Status = true
-						}
+					for j, _ := range risk.Risks {
+
+						workloadRisks[i].Risks[j].Checkpoints.CHK_POLP_EGRESS.Status = true
+
 					}
 				}
 
