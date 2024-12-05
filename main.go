@@ -284,7 +284,7 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 		}
 	}
 
-	return false, w.WorkloadName, err
+	return false, "", err
 }
 
 func matchesLabelSelector(matchLabels map[string]string, targetLabel string) bool {
