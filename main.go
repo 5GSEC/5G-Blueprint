@@ -244,8 +244,6 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 	}
 	// var flag = false
 
-	fmt.Println("CHECKING NETWORK POLICIES")
-
 	for _, np := range networkPolicies.Items {
 		// if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, det) {
 		// 	fmt.Println("Continuing cuz nothing found")
@@ -254,7 +252,6 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 
 		for _, lab := range w.Labels {
 			if !matchesLabelSelector(np.Spec.PodSelector.MatchLabels, lab) {
-				fmt.Println("Continuing cuz nothing found")
 				continue
 			}
 		}
@@ -275,6 +272,8 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, w Workload, workload m
 									np.Name, work, labels)
 								w.WorkloadName = work
 								return true, w.WorkloadName, nil
+							} else {
+								return false, work, err
 							}
 						}
 					}
