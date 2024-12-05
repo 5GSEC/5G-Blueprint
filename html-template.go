@@ -91,9 +91,9 @@ var tmplStr = `
                             {{with .Checkpoints.CHK_TLS}}
                                 <div class="checkpoint">
                                     <strong>TLS Check:</strong> 
-                                    {{range .}}
                                         <div>
                                             <span class="status {{if .Status }}status-pass{{else}}status-fail{{end}}">
+                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
@@ -103,9 +103,9 @@ var tmplStr = `
                             {{with .Checkpoints.CHK_POLP_INGRESS}}
                                 <div class="checkpoint">
                                     <strong>Egress Policy Check:</strong>
-                                    {{range .}}
                                         <div>
                                             <span class="status {{if  .Status }}status-pass{{else}}status-fail{{end}}">
+                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
@@ -115,9 +115,9 @@ var tmplStr = `
                             {{with .Checkpoints.CHK_SENSITIVE_ASSETS}}
                                 <div class="checkpoint">
                                     <strong>Sensitive Assets Check:</strong>
-                                    {{range .}}
                                         <div>
                                             <span class="status {{if  .Status }}status-pass{{else}}status-fail{{end}}">
+                                                {{if  .Status }}✓{{else}}✗{{end}}
                                             </span>
                                             {{.Description}}
                                         </div>
