@@ -266,7 +266,6 @@ func verifyNetworkPolicy(clientset *kubernetes.Clientset, work Workload, workloa
 					for _, egre := range details.Egress {
 						component, exists := workload[egre]
 						if !exists {
-							fmt.Println("To Pod Egress not found:", details.WorkloadName)
 							continue
 						}
 
